@@ -1,1 +1,2 @@
-# Econometr-aAvanzada_T2
+# Econometría Avanzada 
+# Taller 2

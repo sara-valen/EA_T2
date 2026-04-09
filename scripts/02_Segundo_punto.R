@@ -7,7 +7,7 @@
 
 # Cargar configuración base
 
-source(here("scripts", "00_Config.R"))
+source(here::here("scripts", "00_Config.R"))
 
 female_politics <- import(here::here("data", "female_politics.dta"))
 

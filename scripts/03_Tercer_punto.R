@@ -7,7 +7,7 @@
 
 # Cargar configuración base
 
-source(here("scripts", "00_Config.R"))
+source(here::here("scripts", "00_Config.R"))
 
 valmoria   <- import(here::here("data", "Valmoria1989.dta"))
 

@@ -17,7 +17,18 @@ p_load(
   stargazer,    # Tablas de regresión en LaTeX
   xtable,       # Tablas en LaTeX
   skimr,        # Estadísticas descriptivas rápidas
-  writexl       # Exportar tablas a Excel
+  writex,       # Exportar tablas a Excel
+  ggplot2,      # Gráficas
+  rdrobust,     # Para estimaciones RD y rdplot
+  rddensity,    # Para test de no manipulación
+  patchwork,
+  dplyr,
+  lmtest,
+  sandwich,
+  readr,
+  haven,
+  lpdensity
+
 )
 
 # Definir rutas 

@@ -166,52 +166,54 @@ print(xtable(tabla_design,
 
 # Gráfica distribución de la distancia
 
-grafica_dbnd <- ggplot(hogares_consumo, aes(x = d_bnd)) +
+grafica_dbnd <- ggplot(cuadrantes_geo, aes(x = d_bnd)) +
   
-  geom_density(
-    color = "gray10",
-    linewidth = 0.6,
-    fill = NA
+  geom_histogram(
+    binwidth  = 5,
+    fill      = "#B0C4DE",
+    color     = "white",
+    linewidth = 0.2
+  ) +
+  
+  stat_function(
+    fun = function(x) dnorm(x, mean = mean(cuadrantes_geo$d_bnd),
+                            sd   = sd(cuadrantes_geo$d_bnd)) *
+      nrow(cuadrantes_geo) * 5,
+    color       = "black",
+    linewidth   = 0.6,
+    linetype    = "dashed",
+    inherit.aes = FALSE
   ) +
   
   geom_vline(
     xintercept = 0,
-    color = "gray40",
-    linewidth = 0.4,
-    linetype = "dashed"
+    color      = "gray30",
+    linetype   = "dashed",
+    linewidth  = 0.6
   ) +
   
-  coord_cartesian(
-    xlim = c(-100, 100)
-  ) +
-  
+  coord_cartesian(xlim = c(-100, 100)) +
   scale_x_continuous(breaks = seq(-100, 100, 50)) +
   
   labs(
-    title = "Distribución de la distancia a la frontera",
-    subtitle = "Negativo: fuera de la mita   |   Positivo: dentro de la mita",
-    x = "Distancia a la frontera (km)",
-    y = "Densidad"
+    x = "Distancia a la frontera",
+    y = "Frecuencia"
   ) +
   
   theme_classic(base_size = 12) +
   theme(
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
-    plot.subtitle = element_text(hjust = 0.5, size = 10, color = "gray40"),
-    axis.title = element_text(face = "bold"),
-    axis.line = element_line(linewidth = 0.4),
-    axis.ticks = element_line(linewidth = 0.4),
-    plot.margin = margin(20, 25, 15, 25),
-    aspect.ratio = 0.4
+    axis.title  = element_text(face = "bold"),
+    axis.line   = element_line(linewidth = 0.4),
+    plot.margin = margin(20, 25, 15, 25)
   )
 
 ggsave(
   filename = store_file("grafica_dbnd.png"),
-  plot = grafica_dbnd,
-  width = 10,   
-  height = 4, 
-  dpi = 300,
-  bg = "white"
+  plot     = grafica_dbnd,
+  width    = 10,
+  height   = 4,
+  dpi      = 300,
+  bg       = "white"
 )
 
 

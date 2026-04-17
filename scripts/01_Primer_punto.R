@@ -471,15 +471,7 @@ hog_25 <- hogares_consumo %>%
   mutate(
     mita_x_dbnd  = pothuan_mita * d_bnd,
     d_bnd2       = d_bnd^2,
-    mita_x_dbnd2 = pothuan_mita * d_bnd^2,
-    x2           = x^2,
-    y2           = y^2,
-    xy           = x * y,
-    mita_x       = pothuan_mita * x,
-    mita_y       = pothuan_mita * y,
-    mita_x2      = pothuan_mita * x^2,
-    mita_y2      = pothuan_mita * y^2,
-    mita_xy      = pothuan_mita * x * y
+    mita_x_dbnd2 = pothuan_mita * d_bnd^2
   )
 
 nin_25 <- ninos_salud %>%
@@ -487,81 +479,86 @@ nin_25 <- ninos_salud %>%
   mutate(
     mita_x_dbnd  = pothuan_mita * d_bnd,
     d_bnd2       = d_bnd^2,
-    mita_x_dbnd2 = pothuan_mita * d_bnd^2,
-    x2           = x^2,
-    y2           = y^2,
-    xy           = x * y,
-    mita_x       = pothuan_mita * x,
-    mita_y       = pothuan_mita * y,
-    mita_x2      = pothuan_mita * x^2,
-    mita_y2      = pothuan_mita * y^2,
-    mita_xy      = pothuan_mita * x * y
+    mita_x_dbnd2 = pothuan_mita * d_bnd^2
   )
 
 
-# a. Polinomio grado 1
+# 6a. Polinomio grado 1
 
 m_consumo_p1 <- lm(lhhequiv ~ pothuan_mita + d_bnd + mita_x_dbnd,
                    data = hog_25)
+m_desnu_p1   <- lm(desnu ~ pothuan_mita + d_bnd + mita_x_dbnd,
+                   data = nin_25)
 
-m_desnu_p1 <- lm(desnu ~ pothuan_mita + d_bnd + mita_x_dbnd,
-                 data = nin_25)
+ct_consumo_p1 <- coeftest(m_consumo_p1,
+                          vcov = vcovCL(m_consumo_p1,
+                                        cluster = ~ubigeo,
+                                        data    = hog_25))
+ct_desnu_p1   <- coeftest(m_desnu_p1,
+                          vcov = vcovCL(m_desnu_p1,
+                                        cluster = ~ubigeo,
+                                        data    = nin_25))
 
 # 6b. Polinomio grado 2
 
 m_consumo_p2 <- lm(lhhequiv ~ pothuan_mita + d_bnd + d_bnd2 +
                      mita_x_dbnd + mita_x_dbnd2,
                    data = hog_25)
-
-m_desnu_p2 <- lm(desnu ~ pothuan_mita + d_bnd + d_bnd2 +
-                   mita_x_dbnd + mita_x_dbnd2,
-                 data = nin_25)
-
-# 6c. Polinomio bidimensional 
-
-m_consumo_xy <- lm(lhhequiv ~ pothuan_mita + x + y + x2 + y2 + xy +
-                     mita_x + mita_y + mita_x2 + mita_y2 + mita_xy,
-                   data = hog_25)
-
-m_desnu_xy <- lm(desnu ~ pothuan_mita + x + y + x2 + y2 + xy +
-                   mita_x + mita_y + mita_x2 + mita_y2 + mita_xy,
-                 data = nin_25)
-
-# Errores estándar clusterizados 
-
-ct_consumo_p1 <- coeftest(m_consumo_p1,
-                          vcov = vcovCL(m_consumo_p1,
-                                        cluster = ~ubigeo,
-                                        data    = hog_25))
-
-ct_desnu_p1 <- coeftest(m_desnu_p1,
-                        vcov = vcovCL(m_desnu_p1,
-                                      cluster = ~ubigeo,
-                                      data    = nin_25))
+m_desnu_p2   <- lm(desnu ~ pothuan_mita + d_bnd + d_bnd2 +
+                     mita_x_dbnd + mita_x_dbnd2,
+                   data = nin_25)
 
 ct_consumo_p2 <- coeftest(m_consumo_p2,
                           vcov = vcovCL(m_consumo_p2,
                                         cluster = ~ubigeo,
                                         data    = hog_25))
-
-ct_desnu_p2 <- coeftest(m_desnu_p2,
-                        vcov = vcovCL(m_desnu_p2,
-                                      cluster = ~ubigeo,
-                                      data    = nin_25))
-
-ct_consumo_xy <- coeftest(m_consumo_xy,
-                          vcov = vcovCL(m_consumo_xy,
+ct_desnu_p2   <- coeftest(m_desnu_p2,
+                          vcov = vcovCL(m_desnu_p2,
                                         cluster = ~ubigeo,
-                                        data    = hog_25))
+                                        data    = nin_25))
 
-ct_desnu_xy <- coeftest(m_desnu_xy,
-                        vcov = vcovCL(m_desnu_xy,
-                                      cluster = ~ubigeo,
-                                      data    = nin_25))
+
+# 6c. Polinomio bidimensional con feols
+
+m_consumo_xy <- feols(
+  lhhequiv ~ pothuan_mita * (x + y),
+  subset  = ~ d_bnd >= -25 & d_bnd <= 25,
+  data    = hogares_consumo,
+  cluster = ~ubigeo
+)
+
+m_desnu_xy <- feols(
+  desnu ~ pothuan_mita * (x + y),
+  subset  = ~ d_bnd >= -25 & d_bnd <= 25,
+  data    = ninos_salud,
+  cluster = ~ubigeo
+)
+
 
 # 6d. Tabla comparativa
 
+
+# Función para extraer de coeftest (grado 1 y 2)
 extraer_cl <- function(ct, n_obs, nombre) {
+  est  <- round(ct["pothuan_mita", "Estimate"], 3)
+  se   <- round(ct["pothuan_mita", "Std. Error"], 3)
+  pval <- ct["pothuan_mita", "Pr(>|t|)"]
+  sig  <- case_when(
+    pval < 0.01 ~ "***",
+    pval < 0.05 ~ "**",
+    pval < 0.10 ~ "*",
+    TRUE        ~ ""
+  )
+  tibble(
+    Especificación = nombre,
+    `Coef (SE)`    = paste0(est, sig, " (", se, ")"),
+    N              = n_obs
+  )
+}
+
+# Función para extraer de feols (bidimensional)
+extraer_feols <- function(modelo, n_obs, nombre) {
+  ct   <- coeftable(modelo)
   est  <- round(ct["pothuan_mita", "Estimate"], 3)
   se   <- round(ct["pothuan_mita", "Std. Error"], 3)
   pval <- ct["pothuan_mita", "Pr(>|t|)"]
@@ -582,14 +579,14 @@ extraer_cl <- function(ct, n_obs, nombre) {
 tabla_consumo_cl <- bind_rows(
   extraer_cl(ct_consumo_p1, nrow(hog_25), "Polinomio grado 1"),
   extraer_cl(ct_consumo_p2, nrow(hog_25), "Polinomio grado 2"),
-  extraer_cl(ct_consumo_xy, nrow(hog_25), "Polinomio bidimensional")
+  extraer_feols(m_consumo_xy, 580,        "Polinomio bidimensional")
 ) %>% rename(`Log consumo` = `Coef (SE)`, N_consumo = N)
 
 # Desnutrición
 tabla_desnu_cl <- bind_rows(
-  extraer_cl(ct_desnu_p1, nrow(nin_25), "Polinomio grado 1"),
-  extraer_cl(ct_desnu_p2, nrow(nin_25), "Polinomio grado 2"),
-  extraer_cl(ct_desnu_xy, nrow(nin_25), "Polinomio bidimensional")
+  extraer_cl(ct_desnu_p1, nrow(nin_25),   "Polinomio grado 1"),
+  extraer_cl(ct_desnu_p2, nrow(nin_25),   "Polinomio grado 2"),
+  extraer_feols(m_desnu_xy, 53693,        "Polinomio bidimensional")
 ) %>% rename(`Desnutrición` = `Coef (SE)`, N_desnu = N)
 
 # Tabla combinada
@@ -599,14 +596,13 @@ tabla_efectos_cl <- tabla_consumo_cl %>%
 print(xtable(tabla_efectos_cl,
              caption = "Efecto causal de la mita — Errores estándar clusterizados por distrito ($\\pm$25 km)",
              label   = "tab:efectos",
-             digits  = c(0, 0, 0, 0, 0, 0)),
+             digits  = c(0,0,0,0,0,0)),
       include.rownames       = FALSE,
       booktabs               = TRUE,
       sanitize.text.function = identity)
 
-
 # -----------------------------------------------------------------------------
-# 7. Robustez al ancho de banda — Grado 1 y Grado 2
+# 7. Robustez al ancho de banda 
 # -----------------------------------------------------------------------------
 
 estimar_ventana_completa <- function(data_hog, data_nin, ventana) {
@@ -627,32 +623,58 @@ estimar_ventana_completa <- function(data_hog, data_nin, ventana) {
       mita_x_dbnd2 = pothuan_mita * d_bnd^2
     )
   
-  # Modelos grado 1
-  m_con_p1 <- lm(lhhequiv ~ pothuan_mita + d_bnd + mita_x_dbnd,
-                 data = hog_v)
-  m_des_p1 <- lm(desnu ~ pothuan_mita + d_bnd + mita_x_dbnd,
-                 data = nin_v)
+  # Grado 1
+  m_con_p1 <- lm(lhhequiv ~ pothuan_mita + d_bnd + mita_x_dbnd, data = hog_v)
+  m_des_p1 <- lm(desnu    ~ pothuan_mita + d_bnd + mita_x_dbnd, data = nin_v)
   
-  # Modelos grado 2
-  m_con_p2 <- lm(lhhequiv ~ pothuan_mita + d_bnd + d_bnd2 +
-                   mita_x_dbnd + mita_x_dbnd2,
-                 data = hog_v)
-  m_des_p2 <- lm(desnu ~ pothuan_mita + d_bnd + d_bnd2 +
-                   mita_x_dbnd + mita_x_dbnd2,
-                 data = nin_v)
-  
-  # Clustering
   ct_con_p1 <- coeftest(m_con_p1,
                         vcov = vcovCL(m_con_p1, cluster = ~ubigeo, data = hog_v))
   ct_des_p1 <- coeftest(m_des_p1,
                         vcov = vcovCL(m_des_p1, cluster = ~ubigeo, data = nin_v))
+  
+  # Grado 2
+  m_con_p2 <- lm(lhhequiv ~ pothuan_mita + d_bnd + d_bnd2 +
+                   mita_x_dbnd + mita_x_dbnd2, data = hog_v)
+  m_des_p2 <- lm(desnu    ~ pothuan_mita + d_bnd + d_bnd2 +
+                   mita_x_dbnd + mita_x_dbnd2, data = nin_v)
+  
   ct_con_p2 <- coeftest(m_con_p2,
                         vcov = vcovCL(m_con_p2, cluster = ~ubigeo, data = hog_v))
   ct_des_p2 <- coeftest(m_des_p2,
                         vcov = vcovCL(m_des_p2, cluster = ~ubigeo, data = nin_v))
   
-  # Función auxiliar
-  fmt <- function(ct) {
+  # Bidimensional con feols
+  m_con_xy <- feols(
+    lhhequiv ~ pothuan_mita * (x + y),
+    subset  = as.formula(paste0("~ d_bnd >= -", ventana, " & d_bnd <= ", ventana)),
+    data    = data_hog,
+    cluster = ~ubigeo
+  )
+  
+  m_des_xy <- feols(
+    desnu ~ pothuan_mita * (x + y),
+    subset  = as.formula(paste0("~ d_bnd >= -", ventana, " & d_bnd <= ", ventana)),
+    data    = data_nin,
+    cluster = ~ubigeo
+  )
+  
+  # Función auxiliar para coeftest
+  fmt_cl <- function(ct) {
+    est  <- round(ct["pothuan_mita", "Estimate"], 3)
+    se   <- round(ct["pothuan_mita", "Std. Error"], 3)
+    pval <- ct["pothuan_mita", "Pr(>|t|)"]
+    sig  <- case_when(
+      pval < 0.01 ~ "***",
+      pval < 0.05 ~ "**",
+      pval < 0.10 ~ "*",
+      TRUE        ~ ""
+    )
+    paste0(est, sig, " (", se, ")")
+  }
+  
+  # Función auxiliar para feols
+  fmt_feols <- function(modelo) {
+    ct   <- coeftable(modelo)
     est  <- round(ct["pothuan_mita", "Estimate"], 3)
     se   <- round(ct["pothuan_mita", "Std. Error"], 3)
     pval <- ct["pothuan_mita", "Pr(>|t|)"]
@@ -666,13 +688,15 @@ estimar_ventana_completa <- function(data_hog, data_nin, ventana) {
   }
   
   tibble(
-    Ventana               = paste0("$\\pm$", ventana, " km"),
-    `Consumo p1`          = fmt(ct_con_p1),
-    `Consumo p2`          = fmt(ct_con_p2),
-    `Desnutrición p1`     = fmt(ct_des_p1),
-    `Desnutrición p2`     = fmt(ct_des_p2),
-    N_hog                 = nrow(hog_v),
-    N_nin                 = nrow(nin_v)
+    Ventana           = paste0("$\\pm$", ventana, " km"),
+    `Consumo p1`      = fmt_cl(ct_con_p1),
+    `Consumo p2`      = fmt_cl(ct_con_p2),
+    `Consumo xy`      = fmt_feols(m_con_xy),
+    `Desnutrición p1` = fmt_cl(ct_des_p1),
+    `Desnutrición p2` = fmt_cl(ct_des_p2),
+    `Desnutrición xy` = fmt_feols(m_des_xy),
+    N_hog             = nrow(hog_v),
+    N_nin             = nrow(nin_v)
   )
 }
 
@@ -684,9 +708,9 @@ resultados_ventanas <- bind_rows(
 )
 
 print(xtable(resultados_ventanas,
-             caption = "Robustez al ancho de banda — Polinomios grado 1 y 2, errores clusterizados por distrito",
+             caption = "Robustez al ancho de banda — Errores clusterizados por distrito",
              label   = "tab:robustez",
-             digits  = c(0,0,0,0,0,0,0,0)),
+             digits  = c(0,0,0,0,0,0,0,0,0,0)),
       include.rownames       = FALSE,
       booktabs               = TRUE,
       sanitize.text.function = identity)

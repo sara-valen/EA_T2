@@ -27,7 +27,9 @@ p_load(
   sandwich,
   readr,
   haven,
-  lpdensity
+  lpdensity,
+  fixest,
+  AER
 
 )
 

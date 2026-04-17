@@ -33,4 +33,4 @@ R 4.x con los siguientes paquetes: `tidyverse`, `rdrobust`, `fixest`, `AER`, `sa
 
 ## Reproducibilidad
 
-Abrir `Taller2.Rproj` en RStudio y ejecutar los scripts en orden comenzando por `00_Config.R`. Todos los outputs se guardan automáticamente en `stores/`.
+Abrir `Taller2.Rproj` en RStudio y ejecutar los scripts en orden comenzando por `00_Config.R`. Igualmente se puede ejecutar solo el script del punto que se desea ya que se llama a la configuración inicial en cada uno. Todos los outputs se guardan automáticamente en `stores/`.
